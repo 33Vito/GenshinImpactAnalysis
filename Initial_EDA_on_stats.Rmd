@@ -1,0 +1,269 @@
+---
+title: "Genshin Impact Analysis"
+subtitle: "Basic Stats EDA"
+author: "Mr Bandun"
+date: "`r Sys.Date()`"
+output:
+  # rmdformats::robobook:
+    html_document:
+      self_contained: no
+      code_folding: hide
+      highlight: tango
+      theme: flatly
+      toc: yes
+      toc_float:
+        collapsed: no
+---
+
+```{r setup, include=FALSE}
+options(scipen=999, expressions=50000, 
+        DT.options = list(pageLength = 8,
+                          scrollX = TRUE,
+                          dom = 'Bfrtip',
+                          buttons = c('copy', 'csv', 'excel', 'pdf', 'print'), 
+                          autoWidth = TRUE)) 
+knitr::opts_chunk$set(echo = F, message=F, warning=F, fig.width=9.5, fig.height=4)
+knitr::opts_knit$set(dev.args = list(type = "cairo"), progress=FALSE)
+```
+  
+# Load packages
+
+```{r}
+source("utility.R")
+```
+
+# Load data
+
+Source: [honeyhunterworld](https://genshin.honeyhunterworld.com/?lang=EN)
+
+```{r}
+char_main_df <- read_csv("char_main_df.csv")
+char_df_list <- readRDS("char_df_list.Rds")
+```
+
+# Basic attack
+
+```{r lv10-all-weapon, fig.width=8, fig.height=5.5}
+char_df_list %>% 
+  imap_dfr(~.x[[2]] %>% 
+             # filter(Lv == 10) %>% 
+             # select(contains("-Hit")) %>% 
+             mutate(name = .y) %>% 
+             relocate(name)) %>% 
+  # glimpse()
+  filter(Lv == 10) %>%
+  
+  left_join(char_main_df, by="name") %>% 
+  
+  ggplot(aes(x=`1-Hit DMG`, 
+             y=`2-Hit DMG` , 
+             # size = ifelse(weapon == WEAPON, 2, 1),
+             label = name,
+             col=weapon)) + 
+  geom_point(shape=1) + 
+  geom_text_repel(size=4) +
+  ggx(percent, pbn = 8) +
+  ggy(percent, pbn = 8) + 
+  scale_color_brewer(palette = "Set2") + 
+  scale_size_continuous(guide = FALSE, range = c(2,5)) +
+  labs(subtitle = "Level: 10, All Weapon") + 
+  ggl(base_size = 15, lt = TRUE, lp = c(.1,.8)) + 
+  theme(legend.text = element_text(size=12))
+```
+
+
+## By weapon {.tabset}
+
+```{r}
+plot_bdmg_weapon <- function(WEAPON) {
+  char_df_list %>% 
+  imap_dfr(~.x[[2]] %>% 
+             # filter(Lv == 10) %>% 
+             # select(contains("-Hit")) %>% 
+             mutate(name = .y) %>% 
+             relocate(name)) %>% 
+  # glimpse()
+  filter(Lv == 10) %>%
+  
+  left_join(char_main_df, by="name") %>% 
+  filter(weapon == WEAPON) %>% 
+  
+  ggplot(aes(x=`1-Hit DMG`, 
+             y=`2-Hit DMG` , 
+             label = name)) + 
+  geom_point(shape=1, size=3, col="darkred") + 
+  geom_text_repel(size=5, col="darkred") +
+  ggx(percent, pbn = 8) +
+  ggy(percent, pbn = 8) + 
+  # scale_color_brewer(palette = "Set2") + 
+  # scale_size_continuous(guide = FALSE, range = c(2,5)) +
+  labs(subtitle = glue("Level: 10, Weapon: {WEAPON}")) + 
+  ggl(base_size = 15, lt = TRUE, lp = "none") + 
+  theme(legend.text = element_text(size=12))
+}
+
+plot_bdmg_weapon_vp <- function(WEAPON) {
+  char_df_list %>% 
+  imap_dfr(~.x[[2]] %>% 
+             # filter(Lv == 10) %>% 
+             # select(contains("-Hit")) %>% 
+             mutate(name = .y) %>% 
+             relocate(name)) %>% 
+  # glimpse()
+  filter(Lv == 10) %>%
+  
+  left_join(char_main_df, by="name") %>% 
+  
+  ggplot(aes(x=`1-Hit DMG`, 
+             y=`2-Hit DMG` , 
+             size = ifelse(weapon == WEAPON, 3, 1),
+             # label = name,
+             col=weapon == WEAPON)) + 
+  geom_point(shape=1) + 
+  # geom_text_repel(size=4) +
+  ggx(percent, pbn = 8) +
+  ggy(percent, pbn = 8) + 
+  # scale_color_brewer(palette = "Set2") + 
+  scale_color_manual(values = c("darkgrey", "darkred")) + 
+  scale_size_continuous(guide = FALSE, range = c(1,3)) +
+  # ggl(base_size = 8, lt = TRUE, lp = "none") + 
+  labs(subtitle = "Full plot") + 
+  theme_linedraw(base_size = 8) + 
+  theme(legend.position = "none", 
+        axis.text = element_blank(), 
+        panel.grid.major = element_blank(), # get rid of major grid
+        panel.grid.minor = element_blank(), # get rid of minor grid
+        plot.background = element_rect(fill = "transparent", color = NA), 
+        panel.background = element_rect(fill = "white", colour = NA))
+}
+```
+
+### Claymore
+
+```{r lv10-claymore, fig.width=8, fig.height=5.5}
+plot_bdmg_weapon("Claymore")
+print(plot_bdmg_weapon_vp("Claymore"), 
+      vp = viewport(width = 0.33, height = 0.33, x = 0.3, y = 0.75))
+```
+
+### Catalyst
+
+```{r lv10-catalyst, fig.width=8, fig.height=5.5}
+plot_bdmg_weapon("Catalyst")
+print(plot_bdmg_weapon_vp("Catalyst"), 
+      vp = viewport(width = 0.33, height = 0.33, x = 0.3, y = 0.75))
+```
+
+### Sword
+
+```{r lv10-sword, fig.width=8, fig.height=5.5}
+plot_bdmg_weapon("Sword")
+print(plot_bdmg_weapon_vp("Sword"), 
+      vp = viewport(width = 0.33, height = 0.33, x = 0.3, y = 0.75))
+```
+
+### Polearm
+
+```{r lv10-polearm, fig.width=8, fig.height=5.5}
+plot_bdmg_weapon("Polearm")
+print(plot_bdmg_weapon_vp("Polearm"), 
+      vp = viewport(width = 0.33, height = 0.33, x = 0.3, y = 0.75))
+```
+
+### Bow
+
+```{r lv10-bow, fig.width=8, fig.height=5.5}
+plot_bdmg_weapon("Bow")
+print(plot_bdmg_weapon_vp("Bow"), 
+      vp = viewport(width = 0.33, height = 0.33, x = 0.3, y = 0.75))
+```
+
+## By weapon facet
+
+```{r lv10-all-weapon-facet, fig.width=8.5, fig.height=5.5}
+char_df_list %>% 
+  imap_dfr(~.x[[2]] %>% 
+             # filter(Lv == 10) %>% 
+             # select(contains("-Hit")) %>% 
+             mutate(name = .y) %>% 
+             relocate(name)) %>% 
+  # glimpse()
+  filter(Lv == 10) %>%
+  
+  left_join(char_main_df, by="name") %>% 
+  
+  ggplot(aes(x=`1-Hit DMG`, 
+             y=`2-Hit DMG`, 
+             col=weapon, 
+             label=name)) + 
+  geom_point(shape=1) + 
+  geom_text_repel() + 
+  facet_wrap(~weapon, scales = "free") + 
+  ggx(percent, pbn = 5) +
+  ggy(percent, pbn = 5) +
+  labs(subtitle = "Level: 10") + 
+  ggl(base_size = 12, lp = c(.85,.2), lt = TRUE) + 
+  theme(legend.text = element_text(size=12), 
+        strip.text.x = element_text(size = 12))
+```
+
+## By level {.tabset}
+
+```{r}
+plot_bdmg_level <- function(LV) {
+  char_df_list %>% 
+  imap_dfr(~.x[[2]] %>% 
+             # filter(Lv == 10) %>% 
+             # select(contains("-Hit")) %>% 
+             mutate(name = .y) %>% 
+             relocate(name)) %>% 
+  # glimpse()
+  filter(Lv == LV) %>%
+  
+  left_join(char_main_df, by="name") %>% 
+  
+  ggplot(aes(x=`1-Hit DMG`, 
+             y=`2-Hit DMG`, 
+             # size = weapon,
+             label = name,
+             col=weapon)) + 
+  geom_point(shape=1) + 
+  geom_text_repel(size=4) +
+  ggx(percent, pbn = 8) +
+  ggy(percent, pbn = 8) + 
+  scale_size_continuous(guide = FALSE, range = c(2,5)) +
+  scale_color_brewer(palette = "Set2") + 
+  labs(subtitle = glue("Level: {LV}")) + 
+  ggl(base_size = 15, lt = TRUE, lp = c(.1,.8)) + 
+  theme(legend.text = element_text(size=12))
+}
+```
+
+### Level 1
+
+```{r lv1-all-weapon, fig.width=8, fig.height=5.5}
+plot_bdmg_level(1)
+```
+
+### Level 5
+
+```{r lv5-all-weapon, fig.width=8, fig.height=5.5}
+plot_bdmg_level(5)
+```
+
+### Level 10
+
+```{r lv10-all-weapon-2, fig.width=8, fig.height=5.5}
+plot_bdmg_level(10)
+```
+
+### Level 15
+
+```{r lv15-all-weapon, fig.width=8, fig.height=5.5}
+plot_bdmg_level(15)
+```
+
+
+
+
+
